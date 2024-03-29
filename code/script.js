@@ -28,134 +28,135 @@ let path = d3.geoPath()
 
 
 // // //Load data and draw map
-// // d3.json("ukr.json").then(function(json){
-// //     map.selectAll("path")
-// //         .data(json.features)
-// //         .enter()
-// //         .append("path")
-// //         .attr("d", path)
-// //         .attr("fill","gray")
-// // })
+// d3.json("ukr.json").then(function(json){
+//     map.selectAll("path")
+//         .data(json.features)
+//         .enter()
+//         .append("path")
+//         .attr("d", path)
+//         .attr("fill","gray")
+// })
 
-// var csvData = `Indicator,Region,Frequency,2021-M01,2021-M02,2021-M03,2021-M04,2021-M05,2021-M06,2021-M07,2021-M08,2021-M09,2021-M10,2021-M11,2021-M12,2022-M01
-// Migration population growth,Ukraine,Monthly,25966,60400,94382,124303,158414,197773,244653,291313,354833,399465,439948,476925,30955`;
+var csvData = `Indicator,Region,Frequency,2021-M01,2021-M02,2021-M03,2021-M04,2021-M05,2021-M06,2021-M07,2021-M08,2021-M09,2021-M10,2021-M11,2021-M12,2022-M01
+Migration population growth,Ukraine,Monthly,25966,60400,94382,124303,158414,197773,244653,291313,354833,399465,439948,476925,30955`;
 
-// // Parse the CSV data
-// var data = d3.csvParse(csvData);
+// Parse the CSV data
+var data = d3.csvParse(csvData);
 
-// // Transform the data to have date and migration number
-// var transformedData = data.columns.slice(3).map(function(month) {
-//     var dateParts = month.split('-');
-//     var formattedDate = dateParts[0] + '-' + dateParts[1].replace('M', '');
-//     return {
-//         date: d3.timeParse("%Y-%m")(formattedDate),
-//         number: +data[0][month]
-//     };
-// });
+// Transform the data to have date and migration number
+var transformedData = data.columns.slice(3).map(function(month) {
+    var dateParts = month.split('-');
+    var formattedDate = dateParts[0] + '-' + dateParts[1].replace('M', '');
+    return {
+        date: d3.timeParse("%Y-%m")(formattedDate),
+        number: +data[0][month]
+    };
+});
 
 // console.log(transformedData);
 
-// function lineChart(dataset){
+function lineChart(dataset){
 
-//     let padding = 10
+    let padding = 10
 
-//     //set up the scale
-//     let xScale = d3.scaleTime()
-//     .domain([d3.min(dataset, d => d.date), d3.max(dataset, d => d.date)])
-//     .range([0, w]);
+    //set up the scale
+    let xScale = d3.scaleTime()
+    .domain([d3.min(dataset, d => d.date), d3.max(dataset, d => d.date)])
+    .range([0, w]);
 
-//     let yScale = d3.scaleLinear()
-//         .domain([0, d3.max(dataset, d => d.number)])
-//         .range([h, 0]);
+    let yScale = d3.scaleLinear()
+        .domain([0, d3.max(dataset, d => d.number)])
+        .range([h, 0]);
 
-//     //set up the line
-//     let line = d3.line()
-//         .x(d => xScale(d.date))
-//         .y(d => yScale(d.number));
+    //set up the line
+    let line = d3.line()
+        .x(d => xScale(d.date))
+        .y(d => yScale(d.number));
 
-//     // let area = d3.area()
-//     //     .x(d => xScale(d.date))
-//     //     .y0(yScale.range()[0])
-//     //     .y1(d => yScale(d.number))
+    // let area = d3.area()
+    //     .x(d => xScale(d.date))
+    //     .y0(yScale.range()[0])
+    //     .y1(d => yScale(d.number))
         
-//     //set up svg and path
-//     let svg1 = d3.select("#line_chart")
-//         .append("svg")
-//         .attr("width", w)
-//         .attr("height", h)
-//         .style("overflow", "visible")
-//         .style("margin", "50px")
+    //set up svg and path
+    let svg1 = d3.select("#line_chart")
+        .append("svg")
+        .attr("width", w)
+        .attr("height", h)
+        .style("overflow", "visible")
+        // .style("margin", "50px")
+        .style("border","1px solid black")  
 
-//     svg1.append("path") 
-//         .datum(dataset)
-//         .attr("class", "line")
-//         .attr("d", line)
-//         .style("fill", "none")
+    svg1.append("path") 
+        .datum(dataset)
+        .attr("class", "line")
+        .attr("d", line)
+        .style("fill", "none")
 
-//     //add axis
-//     let xAxis = d3.axisBottom(xScale);
-//     let yAxis = d3.axisLeft(yScale);
+    //add axis
+    let xAxis = d3.axisBottom(xScale);
+    let yAxis = d3.axisLeft(yScale);
 
-//     svg1.append("g")
-//         .attr("class", "x axis")
-//         .attr("transform", "translate(0," + (h) + ")")
-//         .call(xAxis);
+    svg1.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + (h) + ")")
+        .call(xAxis);
 
-//     svg1.append("g")
-//         .attr("class", "y axis")
-//         .call(yAxis);
+    svg1.append("g")
+        .attr("class", "y axis")
+        .call(yAxis);
 
-//     // //add annotations
-//     svg1.append("line")
-//         .attr("class", "line halfMilMark")
-//         .attr("x1", padding)
-//         .attr("x2", w)
-//         .attr("y1", yScale(500000))
-//         .attr("y2", yScale(500000))
-//         .style("stroke", "red")
+    // //add annotations
+    // svg1.append("line")
+    //     .attr("class", "line halfMilMark")
+    //     .attr("x1", padding)
+    //     .attr("x2", w)
+    //     .attr("y1", yScale(500000))
+    //     .attr("y2", yScale(500000))
+    //     .style("stroke", "red")
 
-//     svg1.append("text")
-//         .attr("class", "halfMilLabel")
-//         .attr("x", padding + 10)
-//         .attr("y", yScale(500000) - 7)
-//         .text("Half a million unemployed")
-//         .style("stroke", "red")
+    // svg1.append("text")
+    //     .attr("class", "halfMilLabel")
+    //     .attr("x", padding + 10)
+    //     .attr("y", yScale(500000) - 7)
+    //     .text("Half a million unemployed")
+    //     .style("stroke", "red")
 
-//     // add tooltip
-//     let tooltip = d3.select("#line_chart")
-//         .append("div")
-//         .attr("class", "tooltip")
-//         .style("opacity", 0);
+    // add tooltip
+    let tooltip = d3.select("#line_chart")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
 
-//     // add mouseover event handler
-//     svg1.selectAll("path")
-//         .data(dataset)
-//         .enter()
-//         .append("circle")
-//         .attr("class", "dot")
-//         .attr("cx", d => xScale(d.date))
-//         .attr("cy", d => yScale(d.number))
-//         .attr("r", 5)
-//         .on("mouseover", function(d) {
-//             tooltip.transition()
-//                 .duration(200)
-//                 .style("opacity", .9);
-//             tooltip.html("x: " + d.date + "<br/>" + "y: " + d.number)
-//                 .style("left", (d3.event.pageX) + "px")
-//                 .style("top", (d3.event.pageY - 28) + "px");
-//         })
-//         .on("mouseout", function(d) {
-//             tooltip.transition()
-//                 .duration(500)
-//                 .style("opacity", 0);
-//         });
-// }
+    // add mouseover event handler
+    svg1.selectAll("path")
+        .data(dataset)
+        .enter()
+        .append("circle")
+        .attr("class", "dot")
+        .attr("cx", d => xScale(d.date))
+        .attr("cy", d => yScale(d.number))
+        .attr("r", 5)
+        .on("mouseover", function(d) {
+            tooltip.transition()
+                .duration(200)
+                .style("opacity", .9);
+            tooltip.html("x: " + d.date + "<br/>" + "y: " + d.number)
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+        })
+        .on("mouseout", function(d) {
+            tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+        });
+}
 
-// lineChart(transformedData); 
+lineChart(transformedData); 
 
 async function fetchData(dataset, color) {
     // console.log(dataset)
-    console.log(color)
+    // console.log(color)
     const [geoJson, migrationData] = await Promise.all([
         d3.json("ukr.json"),
         d3.csv(dataset),
@@ -204,9 +205,9 @@ async function fetchData(dataset, color) {
         .attr("d", path)
         .call(zoom)
         .attr("fill", (d) => {
-            console.log("shit")
+            // console.log("shit")
             let value = d.properties.value;
-            console.log("value is: ", value / 100, "with color: ", color(value / 10))
+            // console.log("value is: ", value / 100, "with color: ", color(value / 10))
             return value ? color(value / 10) : "#808080";
         })
         // .each(function (d) {
@@ -269,3 +270,38 @@ twoRadioButton.forEach((radio) => {
         }
     });
 })
+
+const minDate = new Date('2021-01-01');
+const maxDate = new Date('2022-01-01');
+const interval = maxDate.getFullYear() - minDate.getFullYear();
+const startYear = minDate.getFullYear();
+let dataMonths = [];
+for (let year = 0; year <= interval; year++) {
+    for (let month = 0; month < 12; month++) {
+        if (year === interval && month > 0) break;
+        dataMonths.push(new Date(startYear + year, month, 1));
+    }
+}
+
+const sliderTime = d3
+    .sliderBottom()
+    .min(d3.min(dataMonths))
+    .max(d3.max(dataMonths))
+    .marks(dataMonths)
+    .width(500)
+    .tickFormat(d3.timeFormat('%b %Y'))
+    .tickValues(dataMonths.filter(d => d.getMonth === 0))
+    .default(minDate)
+    .on('onchange', (value) => {
+        console.log(value);
+    });
+
+const gTime = d3
+    .select('#time_slider')
+    .append('svg')
+    .attr('width', 600)
+    .attr('height', 100)
+    .append('g')
+    .attr('transform', 'translate(30,30)');
+ 
+gTime.call(sliderTime);

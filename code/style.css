@@ -6,5 +6,8 @@
 
 #abc {
     display: flex;
-    
+}
+
+#line_chart {
+    margin-left: 100px;
 }

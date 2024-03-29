@@ -5,13 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paths and Projection</title>
     <script src="https://d3js.org/d3.v5.min.js"></script>
-    <!-- <link rel="stylesheet" href="style.css"> -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     
     <h1>Ukraine map</h1>
+    <a href="index.html" class="button">Back to home</a>
 
-    <p id="chart"></p>
+    <label for="migration">
+        <input type="radio" name="migration" value="in">Migration in
+        <input type="radio" name="migration" value="out">Migration out
+    </label>
+
+    <div id="abc">    
+        <p id="area_map"></p>
+
+        <p id="line_chart"></p>
+    </div>
 
     <footer>
         COS30045 Data Visualisation

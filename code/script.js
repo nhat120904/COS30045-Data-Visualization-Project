@@ -14,11 +14,11 @@ let svg = d3.select("#area_map")
 let color = d3.scaleQuantize()
             .range(['rgb(239,243,255)','rgb(189,215,231)','rgb(107,174,214)','rgb(49,130,189)','rgb(8,81,156)'])
 
-// const map = svg.append("g");
+const map = svg.append("g");
 
 // Create projection
 let projection = d3.geoMercator()
-    .center([30, 50])
+    .center([32, 49])
     .translate([w/2, h/2])
     .scale(2000);
 
@@ -41,23 +41,60 @@ var csvData = `Indicator,Region,Frequency,2021-M01,2021-M02,2021-M03,2021-M04,20
 Migration population growth,Ukraine,Monthly,25966,60400,94382,124303,158414,197773,244653,291313,354833,399465,439948,476925,30955`;
 
 // Parse the CSV data
-var data = d3.csvParse(csvData);
+// var data = d3.csv("ukr_migration (1).csv");
 
 // Transform the data to have date and migration number
-var transformedData = data.columns.slice(3).map(function(month) {
-    var dateParts = month.split('-');
-    var formattedDate = dateParts[0] + '-' + dateParts[1].replace('M', '');
-    return {
-        date: d3.timeParse("%Y-%m")(formattedDate),
-        number: +data[0][month]
-    };
-});
+// var transformedData = data.columns.slice(3).map(function(month) {
+//     var dateParts = month.split('-');
+//     var formattedDate = dateParts[0] + '-' + dateParts[1].replace('M', '');
+//     return {
+//         date: d3.timeParse("%Y-%m")(formattedDate),
+//         number: +data[0][month]
+//     };
+// });
 
 // console.log(transformedData);
+// Specify the region
+// Specify the region
+async function fetchLineData() {
+    let region = 'Kyiv';
 
+    // Read the CSV file
+    // let region = 'Kyiv';
+    // Read the CSV file
+    let data = await d3.csv('ukr_migration (1).csv');
+    // Filter rows for the specified region
+    let filteredData = data.filter(row => (row.Region === region && row.Indicator === "Migration population growth") );
+    
+    // Log the filtered data
+    // console.log("data: ", filteredData);
+    // console.log("columns: ", Object.keys(filteredData[0]));
+    const { Indicator, Region, Frequency, ...rest} = filteredData[0]
+    // console.log("data: ", rest);
+    // return rest;
+
+    // console.log("hey: ",rest)
+    // for (const [key, value] of Object.entries(rest)) {
+    //     console.log(`Key: ${key}, Value: ${value}`);
+    // }
+    let lineData = []
+        for (const [key, value] of Object.entries(rest)) {
+            let date = key.split('-')
+            let formattedDate = date[0] + '-' + date[1].replace('M', '');
+            lineData.push({
+                date: d3.timeParse("%Y-%m")(formattedDate),
+                number: +value
+            })
+        }
+
+    // console.log("dit cu: ",lineData)
+}
+fetchLineData()
+
+//filter value
 function lineChart(dataset){
 
-    let padding = 10
+    // let padding = 10
 
     //set up the scale
     let xScale = d3.scaleTime()
@@ -152,8 +189,10 @@ function lineChart(dataset){
         });
 }
 
-lineChart(transformedData); 
+// lineChart(transformedData); 
 
+const demo = document.getElementById("demo")
+demo.innerHTML = "fuck"
 async function fetchData(dataset, color) {
     // console.log(dataset)
     // console.log(color)
@@ -202,6 +241,16 @@ async function fetchData(dataset, color) {
         .data(geoJson.features)
         .enter()
         .append("path")
+        .on("mouseover", function () {
+            d3.select(this).attr("fill", "orange");
+            demo.innerHTML = "shitttt"
+        })
+        .on("mouseout", function () {
+            d3.select(this).attr("fill", (d) => {
+                let value = d.properties.value;
+                return value ? color(value / 10) : "#808080";
+            });
+        })
         .attr("d", path)
         .call(zoom)
         .attr("fill", (d) => {
@@ -244,9 +293,6 @@ function findMostSimilarString(inputString, stringArray) {
 
     return mostSimilarString;
 }
-
-// id = in dataset = ukr_migration_int
-//id = out dataset = ukr_migration_out
 
 const twoRadioButton = document.querySelectorAll(
     "input[type=radio][name=migration]"
@@ -303,5 +349,6 @@ const gTime = d3
     .attr('height', 100)
     .append('g')
     .attr('transform', 'translate(30,30)');
- 
+
 gTime.call(sliderTime);
+

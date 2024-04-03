@@ -22,3 +22,93 @@
     display: flex;
     
 }
+
+/* style.css */
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+h1 {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.button {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 5px;
+    margin: 20px;
+}
+
+.button:hover {
+    background-color: #0056b3;
+}
+
+label {
+    display: block;
+    margin: 20px;
+}
+
+#abc {
+    margin: 20px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 5px;
+}
+
+#area_map,
+#line_chart {
+    margin-bottom: 20px;
+}
+
+#time_slider {
+    margin: 20px;
+}
+
+footer {
+    text-align: center;
+    margin-top: 50px;
+    background-color: #333;
+    color: #fff;
+    padding: 10px 0;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    footer {
+        position: relative;
+    }
+}
+
+#addData,
+#removeData,
+#sort {
+    padding: 10px 15px;
+    margin: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+#addData:hover,
+#removeData:hover,
+#sort:hover {
+    background-color: #45a049;
+}
+
+#bar {
+    display: flex;
+    justify-content: center;
+}

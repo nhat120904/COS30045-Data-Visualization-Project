@@ -250,11 +250,11 @@ async function fetchData(type, color, timeRange) {
 
     // console.log("MaxValues" + maxValues + "\n" + d3.max(maxValues));
     color.domain([0, d3.max(maxValues)])
-    let dataRange = []
+    let dataRange = [0]
     color.range().forEach(function(colorValue, index) {
         var domainValue = color.invertExtent(colorValue);
         console.log("Color: " + colorValue + ", Range: " + domainValue);
-        dataRange.push(domainValue)
+        dataRange.push(domainValue[1])
     });
     console.log("data range: ", dataRange)
     let index = 0;
@@ -390,6 +390,24 @@ async function fetchData(type, color, timeRange) {
         })
         .style("stroke-width", "0.5")
         .style("stroke", "black")
+    
+    svg.selectAll("text").remove();
+    svg.selectAll("text") 
+        .data(dataRange)
+        .enter()
+        .append("text")
+        .attr("id", "legend")
+        .attr("x", function(d, i) {
+            return 200 + i * 70 + 20;
+        })
+        .attr("y", 570)
+        .attr("font-size", fontSize)
+        .attr("text-anchor", "middle")
+        .text(function(d) {
+            console.log(d3.select(this).data())
+            return Math.round(d / 100) * 100
+        })
+
 }
 
 fetchData("in", color, initTime)

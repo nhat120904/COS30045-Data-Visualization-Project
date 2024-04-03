@@ -112,3 +112,17 @@ footer {
     display: flex;
     justify-content: center;
 }
+
+#bar_chart {
+    display: flex;
+    flex-direction: row-reverse;
+}
+
+#bar_chart > #bar {
+    flex: 1;
+}
+
+#bar_chart > #helper > label {
+    display: flex;
+    flex-direction: column;
+}

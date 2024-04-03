@@ -1,6 +1,6 @@
 let w = 800; // Increase the width
 let h = 600; // Increase the height
-let initTime = [0,12];
+let initTime = [5,8];
 function zoomed() {
     map.attr('transform', d3.event.transform);
 }
@@ -215,6 +215,8 @@ function calculateAverage(dataset, timeRange){
     return Math.floor(result);
 }
 
+
+
 async function fetchData(type, color, timeRange) {
     const [geoJson, migrationData] = await Promise.all([
         d3.json("ukr (1).json"),
@@ -234,7 +236,6 @@ async function fetchData(type, color, timeRange) {
                 return;
             }
         });
-        
     })
 
     let maxValues = [];
@@ -247,9 +248,15 @@ async function fetchData(type, color, timeRange) {
         maxValues.push(average);
     })
 
-    console.log("MaxValues" + maxValues + "\n" + d3.max(maxValues));
+    // console.log("MaxValues" + maxValues + "\n" + d3.max(maxValues));
     color.domain([0, d3.max(maxValues)])
-
+    let dataRange = []
+    color.range().forEach(function(colorValue, index) {
+        var domainValue = color.invertExtent(colorValue);
+        console.log("Color: " + colorValue + ", Range: " + domainValue);
+        dataRange.push(domainValue)
+    });
+    console.log("data range: ", dataRange)
     let index = 0;
 
     svg.selectAll("path")
@@ -323,11 +330,66 @@ async function fetchData(type, color, timeRange) {
             if(type != "in") {
                 value = calculateAverage(d.value.migrationReduction, timeRange);
             }
-            console.log("Color:" + d.name + " Color" + color(value));
+            // console.log("Color:" + d.name + " Color" + color(value));
             return value ? color(value) : "#808080";
         })
         .style("stroke", "black")
         .style("stroke-width", "0.5px")
+    
+    let rangeColor
+    if (type === "in") {
+        rangeColor = ['rgb(240,249,232)','rgb(186,228,188)','rgb(123,204,196)','rgb(67,162,202)','rgb(8,104,172)']
+    }
+    else {
+        rangeColor = [
+            "rgb(254,229,217)",
+            "rgb(252,174,145)",
+            "rgb(251,106,74)",
+            "rgb(222,45,38)",
+            "rgb(165,15,21)",
+        ];
+    }
+
+    console.log("fuck" , rangeColor)
+    var aliasColorScale = d3.scaleQuantize()
+        .domain([10, 50])
+        .range(rangeColor);
+
+    let alias = [10, 20, 30, 40, 50]
+
+    // Remove previous color schema before appending new color schema
+    svg.selectAll(".color_rect").remove();
+    svg.selectAll(".color_rect")
+        .data(alias)
+        .enter()
+        .append("rect")
+        .attr("class", "color_rect")
+        .attr("x", function(d, i) {
+            return 200 + i * 70 + 20;
+        })
+        .attr("y", 580)
+        .attr("width", 70)
+        .attr("height", 20)
+        .attr("fill", (d) => {
+            return aliasColorScale(d);
+        })
+        .on("mouseover", (d) => {
+            const target_color = aliasColorScale(d);
+            svg.selectAll("path")
+                .filter(function () {
+                    return d3.select(this).attr("fill") !== target_color;
+                })
+                .style("filter", "brightness(50%)")
+                .attr("stroke", "white")
+                .attr("stroke-width", "2");
+        })
+        .on("mouseout", () => {
+            svg.selectAll("path")
+                .style("filter", "none")
+                .attr("stroke", "none");
+        })
+        .style("stroke-width", "0.5")
+        .style("stroke", "black")
 }
 
 fetchData("in", color, initTime)
@@ -404,7 +466,16 @@ const sliderTime = d3
     .tickValues(dataMonths.filter(d => d.getMonth === 0))
     .default([d3.min(dataMonths), d3.max(dataMonths)])
     .on('onchange', (value) => {
-        console.log(value);
+        const date1 = new Date(value[0]);
+        const date2 = new Date(value[1]);
+        
+        // Format the dates
+        const formattedDate1 = date1.toISOString(); // Example: "2021-03-31T12:20:00.000Z"
+        const formattedDate2 = date2.toISOString(); // Example: "2021-07-31T12:20:00.000Z"
+        
+        console.log("Timestamp 1:", formattedDate1);
+        console.log("Timestamp 2:", formattedDate2);
+        console.log("time: ",value);
     });
 
 const gTime = d3
@@ -454,7 +525,7 @@ async function fetchBarData() {
         });
     
     })
-    console.log(barData)
+    // console.log(barData)
     updateData(barData)
     // return barData;
 }
@@ -476,7 +547,7 @@ var svg2 = d3.select("#bar")
     // .style("width", "100%")
     // .attr("preserveAspectRatio", "none")
 function updateData(dataset) {
-    console.log("dataset length: ", dataset)
+    // console.log("dataset length: ", dataset)
     const migrationGrowthValues = dataset.map(data => data.migrationGrowth)
                                         .filter(value => typeof value === 'number');
 
@@ -491,7 +562,7 @@ function updateData(dataset) {
     const maxMigrationGrowth = Math.max(...migrationGrowthValues);
 
     // Print the maximum migrationGrowth value
-    console.log("Maximum migrationGrowth:", migrationGrowthValues);
+    // console.log("Maximum migrationGrowth:", migrationGrowthValues);
 
     var xScale = d3.scaleBand()
             .rangeRound([0, 1200])
@@ -520,7 +591,7 @@ function updateData(dataset) {
     var sortBars = function(check){
         svg2.selectAll("rect")
             .sort(function(a, b) {
-                console.log(check)
+                // console.log(check)
                 if (check) {
                     return d3.ascending(a, b)
                 }
@@ -675,3 +746,15 @@ svg3.selectAll("rect")
     .style("fill", function(d) { return colorScale(d); });
 
 // updateData(dataset)
+
+const region_checkbox = document.getElementsByClassName("region_checkbox");
+
+for (const checkbox of region_checkbox) {
+    checkbox.addEventListener("click", () => {
+        const checkedValues = [...region_checkbox]
+            .filter((box) => box.checked)
+            .map((box) => box.value);
+
+        console.log(checkedValues);
+    });
+}

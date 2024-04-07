@@ -11,6 +11,8 @@ let svg = d3.select("#area_map")
     .attr("height", h)
     .style("border","1px solid black")  
     .call(zoom)
+    .style("overflow", "visible")
+
 
 let color = d3.scaleQuantize()
             .range(['rgb(240,249,232)','rgb(186,228,188)','rgb(123,204,196)','rgb(67,162,202)','rgb(8,104,172)'])
@@ -44,7 +46,19 @@ let path = d3.geoPath()
 // });
 
 // console.log(transformedData);
-// Specify the region
+const monthsArray = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+const monthYearArray = monthsArray.map(monthIndex => {
+  // Create a date object for each month. Year is 2021 for indexes 0-11, and 2022 for index 12.
+  const date = new Date((monthIndex === 12 ? 2022 : 2021), monthIndex % 12, 1);
+
+  // Format the date into "Month Year" string.
+  const options = { month: 'long', year: 'numeric' };
+  return date.toLocaleDateString('en-US', options);
+});
+
+console.log(monthYearArray);
+
 // Specify the region
 async function fetchLineData(region, migrationType, hover = false) {
     // let region = 'Kyiv';
@@ -301,7 +315,10 @@ function calculateAverage(dataset, timeRange){
     return Math.floor(result);
 }
 
-
+let tooltipMap = d3.select("#area_map")
+.append("div")
+.attr("class", "tooltip")
+.style("opacity", 0);
 
 async function fetchData(type, color, timeRange) {
     console.log("time range: ", timeRange)
@@ -351,6 +368,8 @@ async function fetchData(type, color, timeRange) {
         .enter()
         .append("path")
         .on("mouseover", function (d) {
+            let initialColor = d3.select(this).attr("fill");
+            // console.log("Initial color:", initialColor);
             d3.select(this).attr("fill", "orange");
             d3.select(this).style("cursor", "pointer");
             d3.select(this).style("stroke-width", "2px")
@@ -370,8 +389,8 @@ async function fetchData(type, color, timeRange) {
                 .attr("y2", "100%")
                 .selectAll("stop")
                 .data([
-                    {offset: "0%", color: "rgb(231, 231, 231)"},
-                    {offset: "35%", color: "rgb(231, 231, 231)"},
+                    {offset: "0%", color: "gray"},
+                    {offset: "35%", color: "gray"},
                     {offset: "35%", color: "white"},
                     {offset: "100%", color: "white"}
                 ])
@@ -399,8 +418,8 @@ async function fetchData(type, color, timeRange) {
                     .attr("fill", "url(#rectGradient)")
                     .attr("stroke", "black")
                     .attr("stroke-width", "1px")
-                    .attr("width", 250)
-                    .attr("height", 150)
+                    .attr("width", 270)
+                    .attr("height", 130)
                     .attr("rx", 10)
                     .attr("ry", 10)
                     .style("filter", "url(#drop-shadow)")
@@ -409,15 +428,37 @@ async function fetchData(type, color, timeRange) {
                 let textRegion = svg
                     .append("text")
                     .attr("id", "hoverText")
-                    .text((d) => region + "\nMigration: " + value)
-                    .attr("font-family", "sans-serif")
-                    .attr("font-size", "14px")
+                    .text((d) => region)
+                    .attr("font-family", "Tahoma")
+                    .attr("font-size", "16px")
                     .attr("fill", "black")
+                    .style("font-weight", "bold")
                     .style("pointer-events", "none")
-                
-                    
+                    .style("fill", color(value));
+
+                let timeRangeText = svg
+                    .append("text")
+                    .attr("id", "timeRangeText")
+                    .text(monthYearArray[timeRange[0]] + " - " + monthYearArray[timeRange[1]]) // replace with your time range variable
+                    .attr("font-family", "sans-serif")
+                    .attr("font-size", "16px")
+                    .style("fill", "black")
+                    .style("pointer-events", "none");
+
+                let migrationValueText = svg
+                    .append("text")
+                    .attr("id", "migrationText")
+                    .text("Average migration " +  type +  " value: " + value)
+                    .attr("font-family", "sans-serif")
+                    .attr("font-size", "16px")
+                    .style("fill", "black")
+                    .style("pointer-events", "none")
+                // Position the time range text under the textRegion
+                // Adjust the translate values as needed
+                timeRangeText.attr("transform", `translate(30, 70)`);
+                migrationValueText.attr("transform", `translate(30, 90)`);
                 // let textLength = text.node().getComputedTextLength();
-                textRegion.attr("transform", `translate(40, 30)`);
+                textRegion.attr("transform", `translate(40, 22)`);
                 box.attr("transform", "translate(20, -10)")
             }
             // lineChart()
@@ -429,6 +470,8 @@ async function fetchData(type, color, timeRange) {
                 let coord = d3.mouse(this);
                 svg.select("#hoverText").attr("x", coord[0]).attr("y", coord[1]);
                 svg.select("#hoverRect").attr("x", coord[0]).attr("y", coord[1]);
+                svg.select("#timeRangeText").attr("x", coord[0]).attr("y", coord[1]);
+                svg.select("#migrationText").attr("x", coord[0]).attr("y", coord[1]);
             }
         })
         .on("mouseout", function (d) {
@@ -446,6 +489,8 @@ async function fetchData(type, color, timeRange) {
             d3.select(this).style("cursor", "default");
             svg.select("#hoverText").remove();
             svg.select("#hoverRect").remove();
+            svg.select("#timeRangeText").remove();
+            svg.select("#migrationText").remove();
         })
         .attr("d", path)
         .call(zoom)
@@ -581,6 +626,7 @@ twoRadioButton.forEach((radio) => {
                             .range(['rgb(240,249,232)','rgb(186,228,188)','rgb(123,204,196)','rgb(67,162,202)','rgb(8,104,172)'])
             typeMap = "in"
             await fetchData("in", color, initTime);
+            await fetchBarData(initTime, "in")
         }
         else 
         {
@@ -589,6 +635,7 @@ twoRadioButton.forEach((radio) => {
                         .range(['rgb(254,229,217)','rgb(252,174,145)','rgb(251,106,74)','rgb(222,45,38)','rgb(165,15,21)'])
             typeMap = "out"
             await fetchData("out", color, initTime)
+            await fetchBarData(initTime, "out")
         }
     });
 })
@@ -635,6 +682,7 @@ const sliderTime = d3
                             .range(['rgb(240,249,232)','rgb(186,228,188)','rgb(123,204,196)','rgb(67,162,202)','rgb(8,104,172)'])
             typeMap = "in"
             await fetchData("in", color, [month1 - 1, month2 - 1]);
+            await fetchBarData([month1 - 1, month2 - 1], "in")
         }
         else 
         {
@@ -643,6 +691,7 @@ const sliderTime = d3
                         .range(['rgb(254,229,217)','rgb(252,174,145)','rgb(251,106,74)','rgb(222,45,38)','rgb(165,15,21)'])
             typeMap = "out"
             await fetchData("out", color, [month1 - 1, month2 - 1])
+            await fetchBarData([month1 - 1, month2 - 1], "out")
         }
         console.log("from: ", month1 - 1, "to ", month2 - 1)
         // fetchData(typeMap, color, [month1 - 1, month2 - 1])
@@ -676,7 +725,7 @@ for (var i = 0; i < numValues; i++) {
 }
 async function fetchBarData(timeRange, type) {
     let barData = []
-   
+
     const [geoJson, migrationData] = await Promise.all([
         d3.json("ukr (1).json"),
         d3.json("ukr_migration.json"),
@@ -711,7 +760,14 @@ async function fetchBarData(timeRange, type) {
     })
     barData = barData.filter(data => data.name !== "Avtonomna Respublika Krym");
     console.log("BarData", barData)
-    updateData(barData);
+    if (type === "in") {
+        console.log("uising in data")
+        updateData(barData, "blue");
+    }
+    else {
+        console.log("usiong out")
+        updateData(barData, "red")
+    }
     return barData
 }
 
@@ -731,7 +787,7 @@ var svg2 = d3.select("#bar")
     // .style("margin", "0 auto")
     // .style("width", "100%")
     // .attr("preserveAspectRatio", "none")
-function updateData(dataset) {
+function updateData(dataset, color) {
     svg2.select(".x-axis").remove();
     svg2.select(".y-axis").remove();
     // console.log("dataset length: ", dataset)
@@ -744,7 +800,11 @@ function updateData(dataset) {
     //         region: data.region
     //     }
     // })
-
+    console.log("color for bar: ", color)
+    if (color === "blue") {
+        color = "hsl(210, 51%, "
+    }
+    else color = "hsl(0, 100%, "
     // Find the maximum value using Math.max()
     const maxMigrationGrowth = d3.max(dataset, d => d.number);
 
@@ -752,7 +812,7 @@ function updateData(dataset) {
     // console.log("Maximum migrationGrowth:", migrationGrowthValues);
 
     var xScale = d3.scaleBand()
-            .rangeRound([0, 1000])
+            .rangeRound([0, w])
             .paddingInner(0.1)
             .domain(dataset.map(d => d.name))
         
@@ -801,7 +861,7 @@ function updateData(dataset) {
             .attr("x", (d, i) => xScale(d.name))
             .attr("y", d => yScale(d.number))
             .attr("height", d => h - yScale(d.number))
-            .attr("fill", (d) => "hsl(210, 51%, " + (90 - (d.number / maxMigrationGrowth * 70)) + "%)")
+            .attr("fill", (d) => color + (90 - (d.number / maxMigrationGrowth * 70)) + "%)")
 
         // Remove the existing x-axis without transition
         svg2.select(".x-axis").remove();
@@ -878,7 +938,7 @@ function updateData(dataset) {
             d3.select("#tooltip").remove()
             d3.select("#tooltip2").remove()
             d3.select(this)
-            .attr("fill", (d) => "hsl(210, 51%, " + (90 - (d.number / maxMigrationGrowth * 70)) + "%)")
+            .attr("fill", (d) => color + (90 - (d.number / maxMigrationGrowth * 70)) + "%)")
             .style("stroke-width", "0")
             .style("stroke", "transparent")
         })
@@ -901,7 +961,7 @@ function updateData(dataset) {
         })
         .attr("fill", function(d) {
             // Assuming you want the lightness to decrease from 90% to 50% as d.number increases
-            return "hsl(210, 51%, " + (90 - (d.number / maxMigrationGrowth * 70)) + "%)";
+            return color + (90 - (d.number / maxMigrationGrowth * 70)) + "%)";
         })
                
 
@@ -947,43 +1007,31 @@ const region_checkbox = document.getElementsByClassName("region_checkbox");
 // console.log(barData)
 for (const checkbox of region_checkbox) {
     checkbox.addEventListener("click", async () => {
+        if (checkbox.value === 'All') {
+            for (const box of region_checkbox) {
+                box.checked = checkbox.checked;
+            }
+        }
         const checkedValues = [...region_checkbox]
             .filter((box) => box.checked)
             .map((box) => box.value);
 
         console.log(checkedValues)
-        let barData = await fetchBarData(initTime, "in")
-        console.log("barData: ", barData)
+        let barData = await fetchBarData(initTime, typeMap)
+        // console.log("barData: ", barData)
         let barDataArray = Object.values(barData);
         // Filter the dataset to only include the regions that are still checked
         const filteredData = barDataArray.filter(d => checkedValues.includes(d.name));
-        console.log("filteredData: ", filteredData);
-        updateData(filteredData)
-        // let barDataArray = Object.values(barData);
-        // // Filter the dataset to only include the regions that are still checked
-        // const filteredData = barDataArray.filter(d => checkedValues.includes(d.name));
-        // console.log("mon cac: ",barDataArray)
-        // // Update the bars
-        // const bars = svg2.selectAll("rect")
-        //     .data(filteredData, d => d.region); // Use the region as the key
-
-        // bars.exit().remove(); // Remove the bars for the unchecked regions
-
-        // bars.enter()
-        //     .append("rect")
-        //     .attr("x", function(d) { return dataScale(d.value); })
-        //     .attr("width", function(d) { return 50; })
-        //     .attr("height", 30)
-        //     .style("fill", function(d) { return colorScale(d.value); });
-
-        // // Update the xScale domain after filtering
-        // xScale.domain(filteredData.map(d => d.region));
-
-        // // Update the x-axis
-        // svg3.select(".x-axis")
-        //     .transition()
-        //     .duration(1000)
-        //     .call(d3.axisBottom(xScale));
+        // console.log("filteredData: ", filteredData);
+        if (typeMap === "in") {
+            console.log("uising in data")
+            updateData(filteredData, "blue");
+        }
+        else {
+            console.log("usiong out")
+            updateData(filteredData, "red")
+        }
+        // updateData(filteredData)
     });
 }
 

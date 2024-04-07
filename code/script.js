@@ -1,6 +1,6 @@
 let w = 800; // Increase the width
 let h = 600; // Increase the height
-let initTime = [5,8];
+let initTime = [0, 12];
 function zoomed() {
     map.attr('transform', d3.event.transform);
 }
@@ -16,7 +16,7 @@ let color = d3.scaleQuantize()
             .range(['rgb(240,249,232)','rgb(186,228,188)','rgb(123,204,196)','rgb(67,162,202)','rgb(8,104,172)'])
 
 const map = svg.append("g");
-
+let typeMap = "in"
 // Create projection
 let projection = d3.geoMercator()
     .center([32, 49])
@@ -48,6 +48,7 @@ let path = d3.geoPath()
 // Specify the region
 async function fetchLineData(region, migrationType, hover = false) {
     // let region = 'Kyiv';
+    console.log("line region: ",region)
     if (migrationType = "growth")
     {
         migrationType = "Migration population growth"
@@ -61,15 +62,18 @@ async function fetchLineData(region, migrationType, hover = false) {
     // console.log(data)
     // Filter rows for the specified region
     let filteredData = data.filter(row => (row.Region === region && row.Indicator === "Migration population growth") );
-    
+    let filteredDataOut = data.filter(row => (row.Region === region && row.Indicator === "Migration population reduction") );
     // Log the filtered data
     // console.log("data: ", filteredData);
     // console.log("columns: ", Object.keys(filteredData[0]));
     let { Indicator, Region, Frequency, ...rest} = filteredData[0]
     // console.log("data: ", rest);
     // return rest;
-
-    // console.log("hey: ",rest)
+    let { Indicator2, Region2, Frequency2, ...rest2} = filteredDataOut[0]
+    delete filteredDataOut[0]['Frequency'];
+    delete filteredDataOut[0]['Indicator'];
+    delete filteredDataOut[0]['Region'];
+    console.log("hey: ",filteredDataOut[0])
     // for (const [key, value] of Object.entries(rest)) {
     //     console.log(`Key: ${key}, Value: ${value}`);
     // }
@@ -82,15 +86,25 @@ async function fetchLineData(region, migrationType, hover = false) {
                 number: +value
             })
         }
-    //console.log("lineData: ", lineData)
+    let lineDataOut = []
+        for (const [key, value] of Object.entries(filteredDataOut[0])) {
+            let date = key.split('-')
+            let formattedDate = date[0] + '-' + date[1].replace('M', '');
+            lineDataOut.push({
+                date: d3.timeParse("%Y-%m")(formattedDate),
+                number: +value
+            })
+        }
+    console.log("lineDatain: ", lineData)
+    console.log("lineDataout: ", lineDataOut)
     
-    lineChart(lineData, hover)
+    lineChart(lineData, lineDataOut, hover)
 }
 fetchLineData('Kyiv', "growth")
 
 //filter value
 let svg1 = null;
-function lineChart(dataset, hover){
+function lineChart(dataset, dataOut, hover){
 
     // let padding = 10
     // d3.select("#line_chart").select("svg").remove();
@@ -98,9 +112,15 @@ function lineChart(dataset, hover){
     let xScale = d3.scaleTime()
     .domain([d3.min(dataset, d => d.date), d3.max(dataset, d => d.date)])
     .range([0, w]);
-
+    let max;
+    if (d3.max(dataset, d => d.number) > d3.max(dataOut, d => d.number)) {
+        max = d3.max(dataset, d => d.number)
+    }
+    else {
+        max = d3.max(dataOut, d => d.number)
+    }
     let yScale = d3.scaleLinear()
-        .domain([0, d3.max(dataset, d => d.number)])
+        .domain([0, max + 10000])
         .range([h, 0]);
 
     //set up the line
@@ -123,7 +143,7 @@ function lineChart(dataset, hover){
         .attr("height", h)
         .style("overflow", "visible")
         // .style("margin", "50px")
-        .style("border","1px solid black")  
+        // .style("border","1px solid black")  
         // .style("visibility", "hidden")
 
     if (hover) {
@@ -137,19 +157,47 @@ function lineChart(dataset, hover){
         .attr("class", "line")
         .attr("d", line)
         .style("fill", "none")
+        .style("stroke", "blue")
+        .style("stroke-width", 2)
 
+    svg1.append("path")
+        .datum(dataOut)
+        .attr("class", "line")
+        .attr("d", line)
+        .style("fill", "none")
+        .style("stroke", "red")
+        .style("stroke-width", 2)
     //add axis
     let xAxis = d3.axisBottom(xScale);
-    let yAxis = d3.axisLeft(yScale);
+    let yAxis = d3.axisLeft(yScale).ticks(5, "s").tickSize(-w );
 
     svg1.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + (h) + ")")
         .call(xAxis);
 
-    svg1.append("g")
-        .attr("class", "y axis")
-        .call(yAxis);
+    svg1.append("g") //append y-axis
+        .attr("class", "yAxis")
+        .attr("transform",`translate(${0},0)`)
+        .call(yAxis)
+        .call(g => {
+            g.selectAll("text") //ticks for the y-axis
+            .style("text-anchor", "middle")
+            .attr("x", -10)
+            .attr('fill', '#A9A9A9')
+
+            g.selectAll("line")
+            .attr('stroke', '#A9A9A9')
+            .attr('stroke-width', 1) // make horizontal tick thinner and lighter so that line paths can stand out
+            .attr('opacity', 0.7)
+
+            g.select(".domain").remove()
+            })
+            .append('text')
+            .attr('x', 0)
+            .attr("y", -20)
+            .attr("fill", "#A9A9A9")
+            .text("People") //y-axis legend
 
     // //add annotations
     // svg1.append("line")
@@ -174,27 +222,56 @@ function lineChart(dataset, hover){
         .style("opacity", 0);
 
     // add mouseover event handler
-    svg1.selectAll("path")
-        .data(dataset)
+    // Assuming dataset and dataOut are already combined or aligned by date
+    svg1.selectAll(".date-group")
+        .data(dataset) // Assuming dataset has the same dates as dataOut
         .enter()
-        .append("circle")
-        .attr("class", "dot")
-        .attr("cx", d => xScale(d.date))
-        .attr("cy", d => yScale(d.number))
-        .attr("r", 5)
-        .on("mouseover", function(d) {
-            tooltip.transition()
-                .duration(200)
-                .style("opacity", .9);
-            tooltip.html("x: " + d.date + "<br/>" + "y: " + d.number)
-                .style("left", (d3.event.pageX) + "px")
-                .style("top", (d3.event.pageY - 28) + "px");
-        })
-        .on("mouseout", function(d) {
-            tooltip.transition()
-                .duration(500)
-                .style("opacity", 0);
+        .append("g")
+        .attr("class", "date-group")
+        .attr("transform", d => `translate(${xScale(d.date)},0)`) // Horizontal positioning by date
+        .each(function(d, i) {
+            // For each group, append a circle for migration in
+            d3.select(this).append("circle")
+                .attr("class", "dot in")
+                .attr("cy", yScale(d.number)) // Position based on migration in
+                .attr("r", 5)
+                .style("fill", "blue")
+                .on("mouseover", function(d) {
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+                    tooltip.html("Date: " + d.date + "<br/>" + "Migration in: " + d.number)
+                        .style("left", (d3.event.pageX) + "px")
+                        .style("top", (d3.event.pageY - 28) + "px");
+                })
+                .on("mouseout", function() {
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
+
+            // For each group, append a circle for migration out, using the corresponding item from dataOut
+            const outData = dataOut[i]; // This assumes dataOut is aligned and has the same index for corresponding dates
+            d3.select(this).append("circle")
+                .attr("class", "dot out")
+                .attr("cy", yScale(outData.number)) // Position based on migration out
+                .attr("r", 5)
+                .style("fill", "red")
+                .on("mouseover", function(d) {
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+                    tooltip.html("Date: " + outData.date + "<br/>" + "Migration out: " + outData.number)
+                        .style("left", (d3.event.pageX) + "px")
+                        .style("top", (d3.event.pageY - 28) + "px");
+                })
+                .on("mouseout", function() {
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
         });
+
 }
 
 // lineChart(transformedData); 
@@ -207,10 +284,19 @@ function calculateAverage(dataset, timeRange){
     let endMonth = timeRange[1];
     if(dataset.length == 0) return 0;
     if(startMonth == endMonth) {
-        result = Math.abs(dataset[startMonth]);
+        if(startMonth == 0){
+            result = Math.abs(dataset[startMonth]);
+        } else {
+            result = Math.abs(dataset[endMonth] - dataset[endMonth - 1]);
+        }    
     }
     else{
-        result = Math.abs((dataset[endMonth - 1] - dataset[startMonth] + dataset[endMonth])/(endMonth - startMonth)); 
+        if(startMonth == 0){
+            result = Math.abs((dataset[endMonth])/(endMonth - startMonth + 1)); 
+        } else {
+            result = Math.abs((dataset[endMonth] - dataset[startMonth - 1])/(endMonth - startMonth + 1)); 
+        }    
+        
     }
     return Math.floor(result);
 }
@@ -218,14 +304,17 @@ function calculateAverage(dataset, timeRange){
 
 
 async function fetchData(type, color, timeRange) {
+    console.log("time range: ", timeRange)
     const [geoJson, migrationData] = await Promise.all([
         d3.json("ukr (1).json"),
         d3.json("ukr_migration.json"),
     ]);
 
+    let max = 0;
     migrationData.features.forEach((data) => {
         let dataRegion = data.name;
         const dataValue = data.data;
+        
         //console.log("hello: " + dataRegion) 
         //console.log("data:", dataValue)
         geoJson.features.forEach((jsonRegion) => {
@@ -237,17 +326,15 @@ async function fetchData(type, color, timeRange) {
             }
         });
     })
-
+    
     let maxValues = [];
     geoJson.features.forEach((jsonRegion) => {
-        
         let average = calculateAverage(jsonRegion.value.migrationGrowth, timeRange);
         if(type != "in") {
             average = calculateAverage(jsonRegion.value.migrationReduction, timeRange);
         }
         maxValues.push(average);
     })
-
     // console.log("MaxValues" + maxValues + "\n" + d3.max(maxValues));
     color.domain([0, d3.max(maxValues)])
     let dataRange = [0]
@@ -257,7 +344,7 @@ async function fetchData(type, color, timeRange) {
         dataRange.push(domainValue[1])
     });
     console.log("data range: ", dataRange)
-    let index = 0;
+    // let index = 0;
 
     svg.selectAll("path")
         .data(geoJson.features)
@@ -266,34 +353,71 @@ async function fetchData(type, color, timeRange) {
         .on("mouseover", function (d) {
             d3.select(this).attr("fill", "orange");
             d3.select(this).style("cursor", "pointer");
+            d3.select(this).style("stroke-width", "2px")
             let region = d.name;
             let value = calculateAverage(d.value.migrationGrowth, timeRange);
                 if(type != "in") {
                     value = calculateAverage(d.value.migrationReduction, timeRange);
                 }
             if (region) {
-                let text = svg
-                    .append("text")
-                    .attr("id", "hoverText")
-                    .text((d) => region + " Migration: " + value)
-                    .attr("font-family", "sans-serif")
-                    .attr("font-size", "14px")
-                    .attr("fill", "black")
-                    .style("pointer-events", "none")
+
+                svg.append("defs")
+                .append("linearGradient")
+                .attr("id", "rectGradient")
+                .attr("x1", "0%")
+                .attr("y1", "0%")
+                .attr("x2", "0%")
+                .attr("y2", "100%")
+                .selectAll("stop")
+                .data([
+                    {offset: "0%", color: "rgb(231, 231, 231)"},
+                    {offset: "35%", color: "rgb(231, 231, 231)"},
+                    {offset: "35%", color: "white"},
+                    {offset: "100%", color: "white"}
+                ])
+                .enter().append("stop")
+                .attr("offset", function(d) { return d.offset; })
+                .attr("stop-color", function(d) { return d.color; });
+
+                svg.append("defs")
+                .append("filter")
+                .attr("id", "drop-shadow")
+                .attr("x", "-20%")
+                .attr("y", "-20%")
+                .attr("width", "140%")
+                .attr("height", "140%")
+                .append("feDropShadow")
+                .attr("dx", "2")
+                .attr("dy", "2")
+                .attr("stdDeviation", "4")
+                .attr("flood-color", "rgba(0,0,0,0.5)");
                 
                 let box = svg
                     .append("rect")
                     .attr("id", "hoverRect")
                     // .attr("x")
-                    .attr("fill", "transparent")
+                    .attr("fill", "url(#rectGradient)")
                     .attr("stroke", "black")
                     .attr("stroke-width", "1px")
-                    .attr("width", 100)
-                    .attr("height", 100)
+                    .attr("width", 250)
+                    .attr("height", 150)
+                    .attr("rx", 10)
+                    .attr("ry", 10)
+                    .style("filter", "url(#drop-shadow)")
                     .style("pointer-events", "none");
+
+                let textRegion = svg
+                    .append("text")
+                    .attr("id", "hoverText")
+                    .text((d) => region + "\nMigration: " + value)
+                    .attr("font-family", "sans-serif")
+                    .attr("font-size", "14px")
+                    .attr("fill", "black")
+                    .style("pointer-events", "none")
                 
-                let textLength = text.node().getComputedTextLength();
-                text.attr("transform", `translate(${-textLength / 2}, -5)`);
+                    
+                // let textLength = text.node().getComputedTextLength();
+                textRegion.attr("transform", `translate(40, 30)`);
                 box.attr("transform", "translate(20, -10)")
             }
             // lineChart()
@@ -317,8 +441,8 @@ async function fetchData(type, color, timeRange) {
                 // console.log("Mouseout:", value);
                 return value ? color(value) : "#808080";
             });
-
-            if (svg1) svg1.style("visibility", "hidden");
+            d3.select(this).style("stroke-width", "0.5px")
+            // if (svg1) svg1.style("visibility", "hidden");
             d3.select(this).style("cursor", "default");
             svg.select("#hoverText").remove();
             svg.select("#hoverRect").remove();
@@ -407,10 +531,16 @@ async function fetchData(type, color, timeRange) {
             console.log(d3.select(this).data())
             return Math.round(d / 100) * 100
         })
-
+    
+    svg.append("text")
+        .attr("x", 400)
+        .attr("y", 50)
+        .attr("font-size", "24px")
+        .attr("text-anchor", "middle")
+        .text("Ukraine Migration Map");
 }
 
-fetchData("in", color, initTime)
+fetchData(typeMap, color, initTime)
 
 
 function calculateJaccardSimilarity(str1, str2) {
@@ -449,6 +579,7 @@ twoRadioButton.forEach((radio) => {
             svg.selectAll("path").remove()
             let color = d3.scaleQuantize()
                             .range(['rgb(240,249,232)','rgb(186,228,188)','rgb(123,204,196)','rgb(67,162,202)','rgb(8,104,172)'])
+            typeMap = "in"
             await fetchData("in", color, initTime);
         }
         else 
@@ -456,6 +587,7 @@ twoRadioButton.forEach((radio) => {
             svg.selectAll("path").remove();
             let color = d3.scaleQuantize()
                         .range(['rgb(254,229,217)','rgb(252,174,145)','rgb(251,106,74)','rgb(222,45,38)','rgb(165,15,21)'])
+            typeMap = "out"
             await fetchData("out", color, initTime)
         }
     });
@@ -473,7 +605,7 @@ for (let year = 0; year <= interval; year++) {
         dataMonths.push(new Date(startYear + year, month, 1));
     }
 }
-
+let premonth = 0
 const sliderTime = d3
     .sliderBottom()
     .min(d3.min(dataMonths))
@@ -483,17 +615,37 @@ const sliderTime = d3
     .tickFormat(d3.timeFormat('%b %Y'))
     .tickValues(dataMonths.filter(d => d.getMonth === 0))
     .default([d3.min(dataMonths), d3.max(dataMonths)])
-    .on('onchange', (value) => {
+    .on('onchange', async (value) => {
         const date1 = new Date(value[0]);
         const date2 = new Date(value[1]);
         
-        // Format the dates
-        const formattedDate1 = date1.toISOString(); // Example: "2021-03-31T12:20:00.000Z"
-        const formattedDate2 = date2.toISOString(); // Example: "2021-07-31T12:20:00.000Z"
-        
-        console.log("Timestamp 1:", formattedDate1);
-        console.log("Timestamp 2:", formattedDate2);
-        console.log("time: ",value);
+        let month1 = date1.getMonth() + 1; // Adding 1 to convert from 0-indexed to 1-indexed
+        let month2 = date2.getMonth() + 1;
+        // if (month)
+        if (premonth === 12 & month1 === 1) {
+            month1 = 13
+        }
+        if (month2 === 1 & month1 != 0){
+            month2 = 13
+        }
+        premonth = month1
+        if (typeMap === "in") {
+            svg.selectAll("path").remove()
+            let color = d3.scaleQuantize()
+                            .range(['rgb(240,249,232)','rgb(186,228,188)','rgb(123,204,196)','rgb(67,162,202)','rgb(8,104,172)'])
+            typeMap = "in"
+            await fetchData("in", color, [month1 - 1, month2 - 1]);
+        }
+        else 
+        {
+            svg.selectAll("path").remove();
+            let color = d3.scaleQuantize()
+                        .range(['rgb(254,229,217)','rgb(252,174,145)','rgb(251,106,74)','rgb(222,45,38)','rgb(165,15,21)'])
+            typeMap = "out"
+            await fetchData("out", color, [month1 - 1, month2 - 1])
+        }
+        console.log("from: ", month1 - 1, "to ", month2 - 1)
+        // fetchData(typeMap, color, [month1 - 1, month2 - 1])
     });
 
 const gTime = d3
@@ -522,36 +674,51 @@ for (var i = 0; i < numValues; i++) {
     newNumber = Math.floor(Math.random() * (maxValue - minValue) + minValue)
     dataset.push(newNumber);
 }
-async function fetchBarData() {
-    let rawData = await d3.json("ukr_migration.json");
+async function fetchBarData(timeRange, type) {
     let barData = []
-    // for (const [key, value] of Object.entries(data)) {
-    //     let date = key.split('-')
-    //     let formattedDate = date[0] + '-' + date[1].replace('M', '');
-    //     barData.push({
-    //         date: d3.timeParse("%Y-%m")(formattedDate),
-    //         number: +value
-    //     })
-    // }
-    rawData.features.forEach((data) => {
+   
+    const [geoJson, migrationData] = await Promise.all([
+        d3.json("ukr (1).json"),
+        d3.json("ukr_migration.json"),
+    ]);
+
+    migrationData.features.forEach((data) => {
         let dataRegion = data.name;
-        let dataValue = data.data;
-        barData.push({
-            region: dataRegion,
-            migrationGrowth: dataValue.migrationGrowth[0],
-            migrationReduction: dataValue.migrationReduction[0]
+        const dataValue = data.data;
+        geoJson.features.forEach((jsonRegion) => {
+            let jsonRegionName = jsonRegion.name;
+            
+            if (jsonRegionName === dataRegion) {
+                jsonRegion.value = dataValue;
+                return;
+            }
         });
-    
     })
-    // console.log(barData)
-    updateData(barData)
-    // return barData;
+
+    geoJson.features.forEach((jsonRegion) => {
+        let region = jsonRegion.name;
+        if(type == "in"){
+            barData.push({
+                name: region,
+                number: calculateAverage(jsonRegion.value.migrationGrowth, timeRange)
+            })
+        } else {
+            barData.push({
+                name: region,
+                number: calculateAverage(jsonRegion.value.migrationReduction, timeRange)
+            })
+        }
+    })
+    barData = barData.filter(data => data.name !== "Avtonomna Respublika Krym");
+    console.log("BarData", barData)
+    updateData(barData);
+    return barData
 }
 
-fetchBarData()
-var transitionName = "easeCircleIn"
+let barData = fetchBarData(initTime, "in")
+// var transitionName = "easeCircleIn"
 
-
+// console.log("sit me mau:", barData)
 
 var svg2 = d3.select("#bar")
     .append("svg")
@@ -565,62 +732,95 @@ var svg2 = d3.select("#bar")
     // .style("width", "100%")
     // .attr("preserveAspectRatio", "none")
 function updateData(dataset) {
+    svg2.select(".x-axis").remove();
+    svg2.select(".y-axis").remove();
     // console.log("dataset length: ", dataset)
-    const migrationGrowthValues = dataset.map(data => data.migrationGrowth)
-                                        .filter(value => typeof value === 'number');
+    // const migrationGrowthValues = dataset.map(data => data.migrationGrowth)
+    //                                     .filter(value => typeof value === 'number');
 
-    const regionValues = dataset.map((data) => {
-        return {
-            migration: data.migrationGrowth,
-            region: data.region
-        }
-    })
+    // const regionValues = dataset.map((data) => {
+    //     return {
+    //         migration: data.migrationGrowth,
+    //         region: data.region
+    //     }
+    // })
 
     // Find the maximum value using Math.max()
-    const maxMigrationGrowth = Math.max(...migrationGrowthValues);
+    const maxMigrationGrowth = d3.max(dataset, d => d.number);
 
     // Print the maximum migrationGrowth value
     // console.log("Maximum migrationGrowth:", migrationGrowthValues);
 
     var xScale = d3.scaleBand()
-            .rangeRound([0, 1200])
+            .rangeRound([0, 1000])
             .paddingInner(0.1)
-            // .domain([0, dataset.length])
+            .domain(dataset.map(d => d.name))
+        
     var yScale = d3.scaleLinear()
                 .domain([0, maxMigrationGrowth])
                 .range([h, 0])
 
-    var xAxis = d3.axisBottom()
-                .ticks(5)
-                .scale(xScale);
+    var xAxis = d3.axisBottom(xScale)
+                .tickFormat(d => d.substring(0,3).toUpperCase())
 
+                
+            // svg.append("g")
+            //     .attr("transform", "translate(0," + -10 + ")")
+            //     .call(xAxis)
+            //     .selectAll("text")  
+            //     .style("text-anchor", "end")
+            //     .attr("dx", "-.8em")
+            //     .attr("dy", ".15em")
+            //     .attr("transform", "rotate(-90)");
     var yAxis = d3.axisLeft()
-                .ticks(5)
                 .scale(yScale);
     // Update scales
-    xScale.domain(d3.range(dataset.length))    
-    yScale.domain([0, maxMigrationGrowth])
                 
     // Update bars
     var bars = svg2.selectAll("rect")
-                    .data(migrationGrowthValues)
+                    .data(dataset)
 
-    //Sort function
     var sortBars = function(check){
+        if (check) {
+            // Sort dataset in descending order
+            dataset.sort((a, b) => d3.descending(a.number, b.number));
+        } else {
+            // Sort dataset in ascending order
+            dataset.sort((a, b) => d3.ascending(a.number, b.number));
+        }
+    
+        // Update the xScale domain after sorting
+        xScale.domain(dataset.map(d => d.name));
+        xAxis = d3.axisBottom(xScale)
+        .tickFormat(d => d.substring(0,3).toUpperCase())
+        // Select all bars and update data
         svg2.selectAll("rect")
-            .sort(function(a, b) {
-                // console.log(check)
-                if (check) {
-                    return d3.ascending(a, b)
-                }
-                else return d3.descending(a, b)
-                
-            })
+            .data(dataset)
+            .transition() // Add transition
+            .duration(1000)
+            .attr("x", (d, i) => xScale(d.name))
+            .attr("y", d => yScale(d.number))
+            .attr("height", d => h - yScale(d.number))
+            .attr("fill", (d) => "hsl(210, 51%, " + (90 - (d.number / maxMigrationGrowth * 70)) + "%)")
+
+        // Remove the existing x-axis without transition
+        svg2.select(".x-axis").remove();
+
+        // Append and update the x-axis with a transition
+        svg2.append("g")
+            .attr("class", "x-axis")
+            .attr("transform", `translate(0, ${h})`)
+            .style("opacity", 0)
+            .call(xAxis)
             .transition()
-            .duration(200)
-            .attr("x", function(d, i) {
-                return xScale(i);
-            })
+            .duration(1000) // Duration in milliseconds, adjust as needed
+            .style("opacity", 1);
+
+        // // Update the x-axis
+        // svg2.select(".x.axis")
+        //     .transition()
+        //     .duration(1000)
+        //     .call(xAxis);
     }
 
     d3.select("#sort")
@@ -640,7 +840,7 @@ function updateData(dataset) {
         .append("rect")
         .merge(bars)
         //Handling the mouse over event for the bars
-        .on("mouseover", function() {
+        .on("mouseover", function(event, d) {
             d3.select(this)
                 // .attr("fill", "transparent")
                 .style("stroke-width", "2")
@@ -648,10 +848,11 @@ function updateData(dataset) {
 
             d3.select(this)
                 .append("title")
-                .text((d) => `This value is ${d}`);
+                .text((d) => d.name + ": " + d.number + " migrants");
 
-            var xPosition = parseFloat(d3.select(this).attr("x"))
-            var yPosition = parseFloat(d3.select(this).attr("y")) - 16
+            var xPosition = parseFloat(d3.select(this).attr("x"));
+            var yPosition = parseFloat(d3.select(this).attr("y")) - 16;
+            let data = d3.select(this).data()[0];
             // var yPosition = parseFloat(d3.select(this).attr("y")) + (h - d3.select(this).attr("y")) / 2
             svg2.append("text")
                 .attr("id", "tooltip")
@@ -659,7 +860,7 @@ function updateData(dataset) {
                 .attr("y", yPosition + fontSize / 2)
                 .attr("font-size", fontSize)
                 .attr("text-anchor", "middle")
-                .text(d3.select(this).data()[0])
+                .text(data.number)
                 .style("pointer-events", "none")
 
             svg2.append("text")
@@ -668,7 +869,7 @@ function updateData(dataset) {
                 .attr("y", h + fontSize / 2 + 30)
                 .attr("font-size", fontSize)
                 .attr("text-anchor", "middle")
-                .text(regionValues.filter(data => data.migration === d3.select(this).data()[0])[0].region)
+                .text(data.name)//regionValues.filter(data => data.migration === d3.select(this).data()[0])[0].region)
                 .style("pointer-events", "none");
             // regionValues.filter(data => data.migration === d3.select(this).data()[0])[0]
         })
@@ -677,30 +878,32 @@ function updateData(dataset) {
             d3.select("#tooltip").remove()
             d3.select("#tooltip2").remove()
             d3.select(this)
-                .attr("fill", (d) => "hsl(210, 100%, " + (d / maxMigrationGrowth * 120) + "%)")
-                .style("stroke-width", "0")
-                .style("stroke", "transparent")
+            .attr("fill", (d) => "hsl(210, 51%, " + (90 - (d.number / maxMigrationGrowth * 70)) + "%)")
+            .style("stroke-width", "0")
+            .style("stroke", "transparent")
         })
         .transition()
-        .duration(200)
-        .ease(d3[transitionName])
+        .duration(500)
+        // .ease(d3[transitionName])
         // .delay(function(d, i){
         //     return i / dataset.length * 1000;
         // })
-        .attr("x", function(d, i) {
-            return xScale(i);
+        .attr("x", function(d) {
+            return xScale(d.name);
         })
         .attr("y", function(d) {
-            return h - yScale(d);
+            return yScale(d.number);
         })
 
         .attr("width", xScale.bandwidth())
         .attr("height", function(d) {
-            return yScale(d);
+            return h - yScale(d.number);
         })
         .attr("fill", function(d) {
-            return "hsl(210, 100%, " + (d / maxMigrationGrowth * 120) + "%)";
+            // Assuming you want the lightness to decrease from 90% to 50% as d.number increases
+            return "hsl(210, 51%, " + (90 - (d.number / maxMigrationGrowth * 70)) + "%)";
         })
+               
 
 
 
@@ -710,11 +913,11 @@ function updateData(dataset) {
         .text(function(d) {
             return "hello";  // assuming `region` is the property with the region name
         })
-        .attr("x", function(d, i) {
+        .attr("x", function(d,i) {
             return xScale(i) + xScale.bandwidth() / 2;  // center the text in the bar
         })
         .attr("y", function(d) {
-            return yScale(d.value);  // position the text at the top of the bar
+            return yScale(d.number);  // position the text at the top of the bar
         })
         .attr("dy", "-.35em")  // adjust position to above the bar
         .attr("text-anchor", "middle")  // center the text
@@ -723,17 +926,69 @@ function updateData(dataset) {
 
     // Create axes
     svg2.append("g")
+        .attr("class", "x-axis")
         .attr("transform", `translate(0, ${h})`)
-        .call(xAxis);
+        .call(xAxis)
+        
+       
     svg2.append("g")
+        .attr("class", "y-axis")
         // .attr("transform", `translate(${padding}, 0)`)
         .call(yAxis);
     /*Handling the exit selection*/
     bars.exit()
     .transition()
     .duration(500)
-    .attr("x", w)
+    // .attr("x", 100)
     .remove();
+}
+
+const region_checkbox = document.getElementsByClassName("region_checkbox");
+// console.log(barData)
+for (const checkbox of region_checkbox) {
+    checkbox.addEventListener("click", async () => {
+        const checkedValues = [...region_checkbox]
+            .filter((box) => box.checked)
+            .map((box) => box.value);
+
+        console.log(checkedValues)
+        let barData = await fetchBarData(initTime, "in")
+        console.log("barData: ", barData)
+        let barDataArray = Object.values(barData);
+        // Filter the dataset to only include the regions that are still checked
+        const filteredData = barDataArray.filter(d => checkedValues.includes(d.name));
+        console.log("filteredData: ", filteredData);
+        updateData(filteredData)
+        // let barDataArray = Object.values(barData);
+        // // Filter the dataset to only include the regions that are still checked
+        // const filteredData = barDataArray.filter(d => checkedValues.includes(d.name));
+        // console.log("mon cac: ",barDataArray)
+        // // Update the bars
+        // const bars = svg2.selectAll("rect")
+        //     .data(filteredData, d => d.region); // Use the region as the key
+
+        // bars.exit().remove(); // Remove the bars for the unchecked regions
+
+        // bars.enter()
+        //     .append("rect")
+        //     .attr("x", function(d) { return dataScale(d.value); })
+        //     .attr("width", function(d) { return 50; })
+        //     .attr("height", 30)
+        //     .style("fill", function(d) { return colorScale(d.value); });
+
+        // // Update the xScale domain after filtering
+        // xScale.domain(filteredData.map(d => d.region));
+
+        // // Update the x-axis
+        // svg3.select(".x-axis")
+        //     .transition()
+        //     .duration(1000)
+        //     .call(d3.axisBottom(xScale));
+    });
+}
+
+for (const checkbox of region_checkbox) {
+    checkbox.checked = true;
 }
 
 let svg3 = d3.select("#demo")
@@ -764,15 +1019,3 @@ svg3.selectAll("rect")
     .style("fill", function(d) { return colorScale(d); });
 
 // updateData(dataset)
-
-const region_checkbox = document.getElementsByClassName("region_checkbox");
-
-for (const checkbox of region_checkbox) {
-    checkbox.addEventListener("click", () => {
-        const checkedValues = [...region_checkbox]
-            .filter((box) => box.checked)
-            .map((box) => box.value);
-
-        console.log(checkedValues);
-    });
-}

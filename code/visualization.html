@@ -6,7 +6,22 @@
     <title>Paths and Projection</title>
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <script src="https://unpkg.com/d3-simple-slider"></script>
+    <script src="https://d3-legend.susielu.com/d3-legend.min.js"></script>
     <link rel="stylesheet" href="style.css">
+    <style>
+        input[type="radio"] {
+            height: 20px;
+            width: 20px;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+    
+        label {
+            font-size: 18px;
+            color: #333;
+        }
+    </style>
+    
 </head>
 <body>
     
@@ -20,15 +35,16 @@
         <input type="radio" name="migration" value="in">Migration in
         <input type="radio" name="migration" value="out">Migration out
     </label>
-    <div id="time_slider"></div>
+
     <div id="abc">    
         <p id="area_map"></p>
 
         <p id="line_chart"></p>
     </div>
-  
+    <div id="time_slider"></div>
 
     <div id="bar_chart">
+        <p id="bar"></p>
         <div id="helper">
             <button type="button" id="sort">Sort</button>
             <br>
@@ -63,7 +79,7 @@
         </div>
         
         
-        <p id="bar"></p>
+
     </div>
     <!-- <div>test</div> -->
     <!-- <div id="demo"></div> -->

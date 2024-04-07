@@ -23,6 +23,8 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: 20px;
+    border-radius: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
 /* style.css */
@@ -31,7 +33,7 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f4f4f4;
+    background-color: hsl(36, 84%, 85%);
 }
 
 h1 {
@@ -59,10 +61,10 @@ label {
 }
 
 #abc {
-    margin: 20px;
+    margin: 30px;
     padding: 20px;
-    background-color: #fff;
-    border-radius: 5px;
+    background-color: hsl(0, 0%, 100%);
+    border-radius: 20px;
 }
 
 #area_map,
@@ -98,7 +100,7 @@ footer {
     margin: 5px;
     font-size: 16px;
     cursor: pointer;
-    background-color: #4CAF50;
+    background-color: #323232;
     color: white;
     border: none;
     border-radius: 5px;
@@ -107,17 +109,29 @@ footer {
 #addData:hover,
 #removeData:hover,
 #sort:hover {
-    background-color: #45a049;
+    background-color: gray;
 }
 
 #bar {
+    padding: 40px;
     display: flex;
     justify-content: center;
+    padding-bottom: 50px;
 }
 
 #bar_chart {
     display: flex;
-    flex-direction: row-reverse;
+    flex-direction: row;
+    background-color: hsl(0, 0%, 100%);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 100px;
+    margin: 30px;
+    padding: 20px;
+    background-color: hsl(0, 0%, 100%);
+    border-radius: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
 #bar_chart > #bar {
@@ -137,6 +151,9 @@ footer {
 #time_slider svg {
     background-color: #f9f9f9;
     border: 1px solid #ccc;
+    border-radius: 20px;
+    margin: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
 /* Style the slider ticks */
@@ -183,23 +200,23 @@ footer {
 }
 
 #intro {
-    font-family: Arial, sans-serif;
-    font-size: 16px;
+    font-family: sans-serif;
+    font-size: 20px;
     line-height: 1.6;
     margin: 0 auto;
-    max-width: 800px;
+    max-width: 1200px;
     padding: 20px;
 }
 
 #intro h1 {
-    font-size: 24px;
+    font-size: 30px;
     font-weight: bold;
     color: #333;
 }
 
 #intro p {
     margin-bottom: 20px;
-    color: #555;
+    color: #323232;
 }
 
 #intro a {
@@ -211,10 +228,6 @@ footer {
     text-decoration: underline;
 }
 
-/* #line_chart {
-    margin: 50px;
-} */
-
 #abc {
     display: flex;
     flex-wrap: wrap;
@@ -225,3 +238,46 @@ footer {
 /* #area_map {
     margin: 50px;
 } */
+
+.radio-inputs {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    border-radius: 0.5rem;
+    background-color: #EEE;
+    box-sizing: border-box;
+    box-shadow: 0 0 0px 1px rgba(0, 0, 0, 0.06);
+    padding: 0.25rem;
+    width: 300px;
+    font-size: 14px;
+  }
+  
+  .radio-inputs .radio {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+  
+  .radio-inputs .radio input {
+    display: none;
+  }
+  
+  .radio-inputs .radio .name {
+    display: flex;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    border: none;
+    padding: .5rem 0;
+    color: rgba(51, 65, 85, 1);
+    transition: all .15s ease-in-out;
+  }
+  
+  .radio-inputs .radio input:checked + .name {
+    background-color: #fff;
+    font-weight: 600;
+  }
+
+h1 {
+    color: #323232;
+}

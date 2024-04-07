@@ -20,7 +20,9 @@
 
 #abc {
     display: flex;
-    
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
 }
 
 /* style.css */
@@ -126,3 +128,100 @@ footer {
     display: flex;
     flex-direction: column;
 }
+
+#padding_area {
+    margin-top: 20vh;
+}
+
+/* Style the SVG container */
+#time_slider svg {
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+}
+
+/* Style the slider ticks */
+#time_slider .tick line {
+    stroke: #bbb;
+    stroke-width: 2px;
+}
+
+/* Style the slider text */
+#time_slider .tick text {
+    fill: #666;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+}
+
+/* Style the slider handle */
+#time_slider .handle {
+    fill: #4285F4;
+    stroke: #fff;
+    stroke-width: 2px;
+    cursor: pointer;
+}
+
+/* Style the track */
+#time_slider .track,
+#time_slider .track-inset,
+#time_slider .track-overlay {
+    stroke-linecap: round;
+}
+
+#time_slider .track {
+    stroke: #ddd;
+    stroke-width: 10px;
+}
+
+#time_slider .track-inset {
+    stroke: #eee;
+    stroke-width: 8px;
+}
+
+#time_slider .track-overlay {
+    stroke-width: 12px;
+    cursor: crosshair;
+}
+
+#intro {
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0 auto;
+    max-width: 800px;
+    padding: 20px;
+}
+
+#intro h1 {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+}
+
+#intro p {
+    margin-bottom: 20px;
+    color: #555;
+}
+
+#intro a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+#intro a:hover {
+    text-decoration: underline;
+}
+
+/* #line_chart {
+    margin: 50px;
+} */
+
+#abc {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+}
+
+/* #area_map {
+    margin: 50px;
+} */

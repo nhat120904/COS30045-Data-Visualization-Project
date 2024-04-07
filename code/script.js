@@ -125,7 +125,7 @@ function lineChart(dataset, dataOut, hover){
     //set up the scale
     let xScale = d3.scaleTime()
     .domain([d3.min(dataset, d => d.date), d3.max(dataset, d => d.date)])
-    .range([0, w]);
+    .range([0, w - 100]);
     let max;
     if (d3.max(dataset, d => d.number) > d3.max(dataOut, d => d.number)) {
         max = d3.max(dataset, d => d.number)
@@ -135,7 +135,7 @@ function lineChart(dataset, dataOut, hover){
     }
     let yScale = d3.scaleLinear()
         .domain([0, max + 10000])
-        .range([h, 0]);
+        .range([h - 100, 0]);
 
     //set up the line
     let line = d3.line()
@@ -187,7 +187,7 @@ function lineChart(dataset, dataOut, hover){
 
     svg1.append("g")
         .attr("class", "x axis")
-        .attr("transform", "translate(0," + (h) + ")")
+        .attr("transform", "translate(0," + (h - 100) + ")")
         .call(xAxis);
 
     svg1.append("g") //append y-axis
@@ -209,9 +209,11 @@ function lineChart(dataset, dataOut, hover){
             })
             .append('text')
             .attr('x', 0)
-            .attr("y", -20)
+            .attr("y", 40)
             .attr("fill", "#A9A9A9")
-            .text("People") //y-axis legend
+            .style("font-size", "16px") // Increase the font size
+            .text("Migrants") //y-axis legend
+            
 
     // //add annotations
     // svg1.append("line")
@@ -255,9 +257,10 @@ function lineChart(dataset, dataOut, hover){
                         .duration(200)
                         .style("opacity", .9);
                     tooltip.html("Date: " + d.date + "<br/>" + "Migration in: " + d.number)
-                        .style("left", (d3.event.pageX) + "px")
-                        .style("top", (d3.event.pageY - 28) + "px");
+                        .style("left", (d3.event.pageX + 10) + "px") // Position tooltip based on mouse event
+                        .style("top", (d3.event.pageY - 28) + "px"); // Position tooltip based on mouse event
                 })
+                
                 .on("mouseout", function() {
                     tooltip.transition()
                         .duration(500)
@@ -276,7 +279,7 @@ function lineChart(dataset, dataOut, hover){
                         .duration(200)
                         .style("opacity", .9);
                     tooltip.html("Date: " + outData.date + "<br/>" + "Migration out: " + outData.number)
-                        .style("left", (d3.event.pageX) + "px")
+                        .style("left", (d3.event.pageX + 10) + "px") // Add 10 pixels to the x-coordinate
                         .style("top", (d3.event.pageY - 28) + "px");
                 })
                 .on("mouseout", function() {
@@ -285,7 +288,34 @@ function lineChart(dataset, dataOut, hover){
                         .style("opacity", 0);
                 });
         });
+        // Add legend
+        const legend = svg1.append("g")
+            .attr("class", "legend")
+            .attr("transform", "translate(700, 550)");
 
+        legend.append("rect")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", 10)
+            .attr("height", 10)
+            .style("fill", "blue");
+
+        legend.append("text")
+            .attr("x", 15)
+            .attr("y", 10)
+            .text("Migration In");
+
+        legend.append("rect")
+            .attr("x", 0)
+            .attr("y", 20)
+            .attr("width", 10)
+            .attr("height", 10)
+            .style("fill", "red");
+
+        legend.append("text")
+            .attr("x", 15)
+            .attr("y", 30)
+            .text("Migration Out");
 }
 
 // lineChart(transformedData); 
@@ -453,15 +483,29 @@ async function fetchData(type, color, timeRange) {
                     .attr("font-size", "16px")
                     .style("fill", "black")
                     .style("pointer-events", "none")
+                
+                let help = svg
+                    .append("text")
+                    .attr("id", "help")
+                    .text("Click for more details")
+                    .attr("font-family", "sans-serif")
+                    .attr("font-size", "16px")
+                    .style("fill", "black")
+                    .style("pointer-events", "none")
                 // Position the time range text under the textRegion
                 // Adjust the translate values as needed
-                timeRangeText.attr("transform", `translate(30, 70)`);
-                migrationValueText.attr("transform", `translate(30, 90)`);
+                timeRangeText.attr("transform", `translate(30, 60)`);
+                migrationValueText.attr("transform", `translate(30, 80)`);
+                help.attr("transform", `translate(30, 100)`);
                 // let textLength = text.node().getComputedTextLength();
                 textRegion.attr("transform", `translate(40, 22)`);
                 box.attr("transform", "translate(20, -10)")
             }
             // lineChart()
+            // fetchLineData(region, "growth", true)
+        })
+        .on("click", function (d) {
+            let region = d.name;
             fetchLineData(region, "growth", true)
         })
         .on("mousemove", function (d) {
@@ -472,6 +516,7 @@ async function fetchData(type, color, timeRange) {
                 svg.select("#hoverRect").attr("x", coord[0]).attr("y", coord[1]);
                 svg.select("#timeRangeText").attr("x", coord[0]).attr("y", coord[1]);
                 svg.select("#migrationText").attr("x", coord[0]).attr("y", coord[1]);
+                svg.select("#help").attr("x", coord[0]).attr("y", coord[1]);
             }
         })
         .on("mouseout", function (d) {
@@ -491,6 +536,7 @@ async function fetchData(type, color, timeRange) {
             svg.select("#hoverRect").remove();
             svg.select("#timeRangeText").remove();
             svg.select("#migrationText").remove();
+            svg.select("#help").remove();
         })
         .attr("d", path)
         .call(zoom)
@@ -586,7 +632,7 @@ async function fetchData(type, color, timeRange) {
 }
 
 fetchData(typeMap, color, initTime)
-
+fetchLineData("Kyiv", "growth", true)
 
 function calculateJaccardSimilarity(str1, str2) {
     const set1 = new Set(str1.toLowerCase().split(''));
